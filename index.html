@@ -159,7 +159,9 @@ Order ID: ${orderId}
 
 ${itemLines}
 
-Total: Rs. ${total}
+item:  Rs. ${total}
+Delivery Charge: Rs. ${230}
+Total: Rs. ${total+230}
 City: ${city}
 Area: ${area}
 House/Street: ${street}
@@ -172,7 +174,7 @@ localStorage.setItem("nt_last_order",JSON.stringify({
 orderId,cart:JSON.parse(JSON.stringify(cart)),city,area,street,txn,total,createdAt:new Date().toISOString()
 }));
 
-const waUrl="https://wa.me/923242735705?text="+encodeURIComponent(msg);
+const waUrl="https://wa.me/+923242735705?text="+encodeURIComponent(msg);
 
 document.getElementById("checkoutModal").style.display="none";
 document.body.insertAdjacentHTML("beforeend",`
