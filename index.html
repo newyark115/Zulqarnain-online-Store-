@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zulqarnain Online Store</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#111}
+header{background:#111827;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.logo{font-size:22px;font-weight:800}.actions button{margin-left:6px}
+button{border:0;border-radius:9px;padding:10px 14px;background:#111827;color:#fff;cursor:pointer}
+button.primary{background:#16a34a}button.danger{background:#dc2626}.container{width:90%;max-width:1150px;margin:25px auto}
+.hero{background:#fff;border-radius:16px;padding:25px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 4px 18px #00000012}
+.card img{width:100%;height:180px;object-fit:cover;border-radius:10px}
+.price{font-weight:800;font-size:18px;margin:8px 0}.muted{color:#667085;font-size:14px}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:30;overflow:auto;padding:20px}
+.box{background:#fff;max-width:600px;margin:30px auto;border-radius:16px;padding:22px}
+.close{float:right;background:#eee;color:#111}
+input,select{width:100%;padding:11px;margin:6px 0 12px;border:1px solid #d0d5dd;border-radius:8px}
+.qr{display:block;width:min(100%,360px);margin:12px auto;border:1px solid #ddd;border-radius:10px}
+.notice{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:10px;margin:12px 0}
+.success{background:#ecfdf3;border:1px solid #a7f3d0;padding:14px;border-radius:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">Zulqarnain Online Store</div>
+<div class="actions">
+<button onclick="openCart()">Cart (<span id="count">0</span>)</button>
+</div>
+</header>
+
+<div class="container">
+<section class="hero">
+<h1>Mobile & Electronics Accessories</h1>
+<p class="muted">JazzCash QR payment only. No card payment.</p>
+</section>
+<div id="products" class="grid"></div>
+</div>
+
+<!-- Product purchase modal: QR appears directly below the selected item -->
+<div id="buyModal" class="modal">
+<div class="box">
+<button class="close" onclick="closeModal('buyModal')">Close</button>
+<h2 id="buyTitle"></h2>
+<p id="buyPrice" class="price"></p>
+<div class="row">
+<div><label>Quantity</label><input id="buyQty" type="number" min="1" value="1"></div>
+<div><label>Colour</label><select id="buyColor"><option>Black</option><option>White</option></select></div>
+</div>
+<hr>
+<h3>Pay with JazzCash QR</h3>
+<img class="qr" src="jazzcash_qr.jpg" alt="Official JazzCash QR">
+<p class="muted" style="text-align:center">Scan the QR code to pay with JazzCash.</p>
+<div class="notice">QR payment is required. After payment, upload your payment receipt and enter the transaction/reference number below.</div>
+<label>Payment receipt (image/PDF)</label>
+<input id="receipt" type="file" accept="image/*,.pdf">
+<label>Transaction / Reference Number</label>
+<input id="txn" type="text" placeholder="Enter transaction/reference number">
+<button class="primary" style="width:100%" onclick="buyNow()">Confirm Payment & Buy</button>
+<p id="buyError" style="color:#dc2626"></p>
+</div>
+</div>
+
+<div id="cartModal" class="modal"><div class="box">
+<button class="close" onclick="closeModal('cartModal')">Close</button>
+<h2>Your Cart</h2><div id="cartItems"></div>
+<hr><p><b>Total: Rs. <span id="cartTotal">0</span></b></p>
+<button class="primary" style="width:100%" onclick="checkout()">Checkout</button>
+</div></div>
+
+<div id="checkoutModal" class="modal"><div class="box">
+<button class="close" onclick="closeModal('checkoutModal')">Close</button>
+<h2>Checkout</h2>
+<p id="checkoutTotal" class="price"></p>
+<label>City</label><input id="city" placeholder="City">
+<label>Area</label><input id="area" placeholder="Area">
+<label>House / Street</label><input id="street" placeholder="House / Street">
+<h3>JazzCash Payment</h3>
+<img class="qr" src="jazzcash_qr.jpg" alt="Official JazzCash QR">
+<p class="muted" style="text-align:center">Scan the QR code to pay with JazzCash.</p>
+<label>Payment receipt</label><input id="proof" type="file" accept="image/*,.pdf">
+<label>Transaction / Reference Number</label><input id="checkoutTxn" type="text">
+<button class="primary" style="width:100%" onclick="placeOrder()">Place Order</button>
+<p id="checkoutError" style="color:#dc2626"></p>
+</div></div>
+
+<script>
+const products=[
+["Handsfree",899,"Black","https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80"],
+["Bluetooth Earbuds",1899,"White","https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=700&q=80"],
+["Keyboard",1599,"Black","https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=700&q=80"],
+["Mouse",799,"Black","https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=700&q=80"],
+["Type-C Charging Cable",499,"White","https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=700&q=80"],
+["Micro USB Cable",399,"Black","https://images.unsplash.com/photo-1609592424822-2c6f2f9f3d8d?auto=format&fit=crop&w=700&q=80"],
+["Charger Adapter",999,"White","https://images.unsplash.com/photo-1591290619762-c5887c8a9c5b?auto=format&fit=crop&w=700&q=80"],
+["Fast Charger",1499,"White","https://images.unsplash.com/photo-1625842268584-8f3296236761?auto=format&fit=crop&w=700&q=80"],
+["Bluetooth Speaker",2299,"Black","https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=700&q=80"],
+["Multi-Port Charging Adapter",1799,"White","https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=700&q=80"]
+];
+let cart=JSON.parse(localStorage.getItem("nt_cart")||"[]"), current=-1;
+
+function render(){
+document.getElementById("products").innerHTML=products.map((p,i)=>`
+<div class="card"><img src="${p[3]}" alt="${p[0]}"><h3>${p[0]}</h3>
+<p class="muted">Colour: ${p[2]}</p><div class="price">Rs. ${p[1]}</div>
+<button class="primary" onclick="openBuy(${i})">Buy Now</button>
+<button onclick="add(${i})">Add to Cart</button></div>`).join("");
+updateCount();
+}
+function openBuy(i){
+current=i;document.getElementById("buyTitle").textContent=products[i][0];
+document.getElementById("buyPrice").textContent="Rs. "+products[i][1];
+document.getElementById("buyQty").value=1;document.getElementById("receipt").value="";
+document.getElementById("txn").value="";document.getElementById("buyError").textContent="";
+document.getElementById("buyModal").style.display="block";
+}
+function buyNow(){
+const r=document.getElementById("receipt"),t=document.getElementById("txn");
+if(!r.files.length||!t.value.trim()){document.getElementById("buyError").textContent="Payment receipt AND transaction/reference number are required.";return}
+const q=Math.max(1,parseInt(document.getElementById("buyQty").value)||1);
+cart.push({i:current,q,color:document.getElementById("buyColor").value});
+localStorage.setItem("nt_cart",JSON.stringify(cart));updateCount();closeModal("buyModal");openCart();
+}
+function add(i){cart.push({i,q:1,color:products[i][2]});localStorage.setItem("nt_cart",JSON.stringify(cart));updateCount();alert("Added to cart.");}
+function updateCount(){document.getElementById("count").textContent=cart.reduce((s,x)=>s+x.q,0)}
+function openCart(){
+let total=0;document.getElementById("cartItems").innerHTML=cart.map((x,n)=>{let p=products[x.i];total+=p[1]*x.q;return `<p>${p[0]} × ${x.q} — Rs. ${p[1]*x.q} <button class="danger" onclick="removeItem(${n})">Remove</button></p>`}).join("")||"<p>Your cart is empty.</p>";
+document.getElementById("cartTotal").textContent=total;document.getElementById("cartModal").style.display="block";
+}
+function removeItem(n){cart.splice(n,1);localStorage.setItem("nt_cart",JSON.stringify(cart));openCart();updateCount()}
+function checkout(){
+if(!cart.length)return alert("Cart is empty.");
+closeModal("cartModal");
+const total=cart.reduce((s,x)=>s+products[x.i][1]*x.q,0);document.getElementById("checkoutTotal").textContent="Total: Rs. "+total;
+document.getElementById("checkoutModal").style.display="block";
+}
+function placeOrder(){
+const city=document.getElementById("city").value.trim();
+const area=document.getElementById("area").value.trim();
+const street=document.getElementById("street").value.trim();
+const proof=document.getElementById("proof");
+const txn=document.getElementById("checkoutTxn").value.trim();
+const err=document.getElementById("checkoutError");
+
+if(!city||!area||!street||!proof.files.length||!txn){
+err.textContent="Please enter your address, upload the payment receipt, and enter the transaction/reference number.";
+return;
+}
+
+const orderId="NT"+Date.now();
+const total=cart.reduce((s,x)=>s+products[x.i][1]*x.q,0);
+const itemLines=cart.map(x=>`${products[x.i][0]} x ${x.q} - Rs. ${products[x.i][1]*x.q}`).join("\n");
+const msg=`Zulqarnain Online Store Order
+Order ID: ${orderId}
+
+${itemLines}
+
+Total: Rs. ${total}
+City: ${city}
+Area: ${area}
+House/Street: ${street}
+Transaction/Reference: ${txn}
+
+Payment method: JazzCash QR
+Payment receipt: Customer will attach the receipt in WhatsApp.`;
+
+localStorage.setItem("nt_last_order",JSON.stringify({
+orderId,cart:JSON.parse(JSON.stringify(cart)),city,area,street,txn,total,createdAt:new Date().toISOString()
+}));
+
+const waUrl="https://wa.me/923242735705?text="+encodeURIComponent(msg);
+
+document.getElementById("checkoutModal").style.display="none";
+document.body.insertAdjacentHTML("beforeend",`
+<div id="orderDone" class="modal" style="display:block">
+ <div class="box">
+  <button class="close" onclick="document.getElementById('orderDone').remove()">Close</button>
+  <h2>Order Details Ready ✅</h2>
+  <div class="success">
+   <b>Order ID:</b> ${orderId}<br>
+   <b>Total:</b> Rs. ${total}<br>
+   <b>Transaction:</b> ${txn}<br><br>
+   <b>Address:</b> ${city}, ${area}, ${street}
+  </div>
+  <p style="margin-top:14px">Ab WhatsApp par order details bhejein. WhatsApp khulne ke baad <b>payment receipt bhi attach karke Send</b> karein.</p>
+  <a href="${waUrl}" target="_blank" rel="noopener" style="display:block;text-align:center;background:#16a34a;color:white;text-decoration:none;padding:13px;border-radius:9px;font-weight:bold">Open WhatsApp & Send Order</a>
+  <button style="width:100%;margin-top:10px" onclick="window.open('${waUrl}','_blank')">Open WhatsApp Again</button>
+ </div>
+</div>`);
+
+cart=[];
+localStorage.setItem("nt_cart","[]");
+updateCount();
+
+setTimeout(()=>{ window.location.href=waUrl; }, 400);
+}
+function closeModal(id){document.getElementById(id).style.display="none"}
+render();
+</script>
+</body></html>
